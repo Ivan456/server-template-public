@@ -7,12 +7,13 @@
   "license": "UNLICENSED",
   "private": true,
   "engines": {
-    "node": ">=14.6.0"
+    "node": ">=14.5.0"
   },
   "devDependencies": {
     "@types/jest": "^26.0.7",
     "@typescript-eslint/eslint-plugin": "^3.7.0",
     "@typescript-eslint/parser": "^3.7.0",
+    "env-cmd": "^10.1.0",
     "eslint": "^7.5.0",
     "eslint-config-prettier": "^6.11.0",
     "eslint-plugin-jest": "^23.18.2",
@@ -26,10 +27,15 @@
   },
   "scripts": {
     "build": "tsc",
+    "env:dev": "env-cmd -e defaults",
+    "env:test": "env-cmd -e defaults,test",
+    "env:ci": "env-cmd -e defaults,ci --no-override",
     "lint": "eslint . --ext .ts --max-warnings 0",
     "lint:fix": "yarn lint --fix",
     "makepretty": "prettier --write -l '**/*.ts'",
-    "test": "jest"
+    "test": "yarn env:test jest",
+    "test:watch": "yarn test --watch",
+    "test:ci": "yarn env:ci jest --ci"
   },
   "husky": {
     "hooks": {

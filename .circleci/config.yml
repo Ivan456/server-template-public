@@ -1,0 +1,133 @@
+defaults: &defaults
+  working_directory: /home/circleci/service-template
+  docker:
+    - image: cimg/node:14.5.0
+  environment:
+    - PROJECT_NAME: pacific-chalice-169110
+    - CLUSTER_NAME: recruito-cluster-1
+    - CLOUDSDK_COMPUTE_ZONE: europe-west1-b
+    - SERVICE_NAME: service-bootstrap
+    - HUBOT_DEPLOY_URL: https://join-dev.com/hubot/deploy
+version: 2.1
+jobs:
+  build:
+    <<: *defaults
+    steps:
+      - checkout
+      - restore_cache:
+          key: main-cache-{{ checksum "yarn.lock" }}
+      - run:
+          name: Authenticate with registry
+          command: echo "//registry.npmjs.org/:_authToken=$npm_TOKEN" > .npmrc
+      - run:
+          name: yarn install
+          command: yarn install
+      - save_cache:
+          key: main-cache-{{ checksum "yarn.lock" }}
+          paths:
+            - node_modules
+  test:
+    <<: *defaults
+    docker:
+      - image: cimg/node:14.5.0
+    steps:
+      - checkout
+      - restore_cache:
+          key: main-cache-{{ checksum "yarn.lock" }}
+      - run:
+          name: Authenticate client with registry
+          command: echo "//registry.npmjs.org/:_authToken=$npm_TOKEN" > .npmrc
+      - run:
+          name: yarn install
+          command: yarn install
+      - run:
+          name: echo debug
+          command: ls -la
+      - run:
+          name: test
+          command: yarn test:ci
+      - store_test_results:
+          path: log
+      - store_artifacts:
+          path: log
+          destination: log
+  lint:
+    <<: *defaults
+    steps:
+      - checkout
+      - restore_cache:
+          key: main-cache-{{ checksum "yarn.lock" }}
+      - run:
+          name: Authenticate with registry
+          command: echo "//registry.npmjs.org/:_authToken=$npm_TOKEN" > .npmrc
+      - run:
+          name: yarn install
+          command: yarn install
+      - run:
+          name: yarn lint
+          command: yarn lint
+      - store_test_results:
+          path: log
+      - store_artifacts:
+          path: log
+          destination: log
+  build_image:
+    <<: *defaults
+    docker:
+      - image: google/cloud-sdk:alpine
+    steps:
+      - setup_remote_docker
+      - checkout
+      - run:
+          name: Install Docker
+          command: apk --update add docker
+      - run:
+          name: Authenticate with registry
+          command: echo "//registry.npmjs.org/:_authToken=$npm_TOKEN" > .npmrc
+      - run:
+          name: Build and push Docker image
+          command: GCLOUD_SERVICE_KEY=${GCLOUD_SERVICE_KEY_DEV} ./.circleci/scripts/build_docker.sh
+      - store_test_results:
+          path: log
+      - store_artifacts:
+          path: log
+          destination: log
+  notify_bender:
+    <<: *defaults
+    docker:
+      - image: busybox:latest
+    steps:
+      - checkout
+      - run:
+          name: Notify Bender
+          command: ./.circleci/scripts/notify_bender.sh
+workflows:
+  version: 2.1
+  build_test_deploy:
+    jobs:
+      - build:
+          context: Global
+      - test:
+          context: Global
+          requires:
+            - build
+      - lint:
+          context: Global
+          requires:
+            - build
+      - build_image:
+          context: Global
+          filters:
+            branches:
+              only: master
+          requires:
+            - build
+      - notify_bender:
+          context: Global
+          filters:
+            branches:
+              only: master
+          requires:
+            - build_image
+            - test
+            - lint
