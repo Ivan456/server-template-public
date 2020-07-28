@@ -1,1 +1,1 @@
-# service-template
+# JOIN service-template
