@@ -65,9 +65,6 @@ jobs:
       - checkout
       - authenticate_npm
       - run:
-          name: Install Docker
-          command: apk --update add docker
-      - run:
           name: Build and push Docker image
           command: GCLOUD_SERVICE_KEY=${GCLOUD_SERVICE_KEY_DEV} ./.circleci/scripts/build_docker.sh
 
