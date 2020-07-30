@@ -13,17 +13,25 @@ defaults: &defaults
 commands:
   authenticate_npm:
     description: Authenticate client with registry
+    parameters:
+      path:
+        type: string
+        default: "."
     steps:
       - run:
           name: Create .npmrc
-          command: echo "//registry.npmjs.org/:_authToken=$npm_TOKEN" > .npmrc
+          command: echo "//registry.npmjs.org/:_authToken=$npm_TOKEN" > << parameters.path >>/.npmrc
 
   yarn_install:
     description: Install dependencies with cache
+    parameters:
+      cache:
+        type: string
+        default: "main"
     steps:
       - checkout
       - restore_cache:
-          key: main-cache-{{ checksum "yarn.lock" }}
+          key: << parameters.cache >>-cache-{{ checksum "yarn.lock" }}
       - authenticate_npm
       - run:
           name: yarn install
@@ -78,6 +86,27 @@ jobs:
           name: Notify Bender
           command: ./.circleci/scripts/notify_bender.sh
 
+  publish_client:
+    <<: *defaults
+    steps:
+      - yarn_install:
+          cache: "publish-client"
+      - authenticate_npm:
+          path: "packages/client"
+      - run:
+          name: yarn install client
+          command: cd packages/client && yarn install
+      - run:
+          name: Publish client package
+          command: yarn proto:client:build && cd packages/client && yarn version --new-version 0.0.${CIRCLE_BUILD_NUM} && yarn build && yarn publish --non-interactive
+      - run:
+          name: Publish Release on GitHub
+          command: ./.circleci/scripts/publish_github_release.sh
+      - save_cache:
+          key: publish-client-cache-{{ checksum "yarn.lock" }}
+          paths:
+            - node_modules
+            - packages/client/node_modules
 
 workflows:
   build_test_deploy:
@@ -100,6 +129,15 @@ workflows:
           requires:
             - build
       - notify_bender:
+          context: Global
+          filters:
+            branches:
+              only: master
+          requires:
+            - build_image
+            - test
+            - lint
+      - publish_client:
           context: Global
           filters:
             branches:

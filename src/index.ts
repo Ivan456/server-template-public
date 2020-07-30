@@ -1,9 +1,3 @@
-import { hello } from './hello'
+import { start } from './api'
 
-const guest = 'JOIN'
-
-const run = () => {
-  console.log(hello(guest))
-}
-
-run()
+void start()

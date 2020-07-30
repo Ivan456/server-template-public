@@ -1,0 +1,23 @@
+{
+  "name": "@join-private/service-template-client",
+  "version": "0.0.1",
+  "description": "gRPC client for service-template",
+  "main": "./build/index.js",
+  "types": "./build/index.d.ts",
+  "repository": "git@github.com:join-com/service-template.git",
+  "author": "JOIN team",
+  "license": "UNLICENSED",
+  "private": false,
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@join-com/gcloud-logger-trace": "^0.1.11",
+    "@join-com/grpc-ts": "^2.0.0",
+    "@join-com/node-trace": "^0.1.8",
+    "protobufjs": "^6.10.1"
+  },
+  "devDependencies": {
+    "typescript": "^3.9.7"
+  }
+}

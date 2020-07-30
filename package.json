@@ -9,6 +9,14 @@
   "engines": {
     "node": ">=14.5.0"
   },
+  "dependencies": {
+    "@join-com/gcloud-logger-trace": "^0.1.11",
+    "@join-com/grpc-ts": "^2.0.0",
+    "@join-com/node-trace": "^0.1.8",
+    "@join-com/process-env": "^1.1.0",
+    "@join-com/shutdown": "^1.0.2",
+    "protobufjs": "^6.10.1"
+  },
   "devDependencies": {
     "@types/jest": "^26.0.7",
     "@typescript-eslint/eslint-plugin": "^3.7.0",
@@ -35,19 +43,18 @@
     "makepretty": "prettier --write -l '**/*.ts'",
     "test": "yarn env:test jest",
     "test:watch": "yarn test --watch",
-    "test:ci": "yarn env:ci jest --ci"
+    "test:ci": "yarn env:ci jest --ci",
+    "proto:clean": "find src/api/grpc/proto/generated ! -name '.prettierrc' -type f -exec rm -f {} +",
+    "proto:generate": "protoc src/api/grpc/proto/*.proto -I src/api/grpc/proto --ts_out=src/api/grpc/proto/generated",
+    "proto:pretty": "yarn prettier --write 'src/api/grpc/proto/generated/**/*.ts'",
+    "proto:build": "yarn proto:clean && yarn proto:generate && yarn proto:pretty",
+    "proto:client:clean": "rm -rf ./packages/client/protoGenerated/*",
+    "proto:client:copy": "cp -R src/api/grpc/proto/generated/ packages/client/protoGenerated/",
+    "proto:client:build": "yarn proto:client:clean && yarn proto:client:copy"
   },
   "husky": {
     "hooks": {
-      "pre-commit": "lint-staged"
+      "pre-commit": "yarn proto:build && yarn tsc --noEmit && lint-staged"
     }
-  },
-  "lint-staged": {
-    "{src,__tests__}/**/*.ts": [
-      "yarn lint:fix"
-    ],
-    "*.{js,ts}": [
-      "yarn prettier --write"
-    ]
   }
 }
