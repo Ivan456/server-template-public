@@ -1,1 +1,1 @@
-# JOIN service-template
+# JOIN server-template-public
