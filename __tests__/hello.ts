@@ -1,4 +1,4 @@
-const hello = (name: string): string => `Hello, ${name}!`
+import { hello } from '../src/hello'
 
 describe('hello', () => {
   it('greets', () => {
